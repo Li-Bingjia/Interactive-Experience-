@@ -7,6 +7,7 @@ clock = pygame.time.Clock()
 
 WHITE=(255,255,255)
 GREEN=(100,200,100)
+bg = pygame.image.load("bg.png").convert()
 
 # 定义人物尺寸
 PLAYER_W, PLAYER_H = 40, 60
@@ -70,7 +71,8 @@ while True:
             vel_y = 0
             on_ground = True
 
-    screen.fill(WHITE)
+    screen.blit(bg, (0,0))
+
 
     for p in platforms:
         pygame.draw.rect(screen, GREEN, p)
@@ -79,4 +81,3 @@ while True:
 
     pygame.display.flip()
     clock.tick(60)
-
