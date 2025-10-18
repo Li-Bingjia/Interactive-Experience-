@@ -1,113 +1,82 @@
-import pygame
-import sys
+import pygame, sys
 
-# 初始化
 pygame.init()
-
-# --- 基本设置 ---
 WIDTH, HEIGHT = 800, 600
-FPS = 60
-GRAVITY = 0.8
-JUMP_STRENGTH = -15
-MOVE_SPEED = 5
-
-# 颜色
-WHITE = (255, 255, 255)
-BLUE = (50, 150, 255)
-GREEN = (100, 200, 100)
-BLACK = (0, 0, 0)
-
-# 创建窗口
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("平台跳跃 Demo")
 clock = pygame.time.Clock()
 
-# --- 玩家类 ---
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.Surface((50, 50))
-        self.image.fill(BLUE)
-        self.rect = self.image.get_rect()
-        self.rect.center = (100, HEIGHT - 150)
-        self.vel_y = 0
-        self.on_ground = False
+WHITE=(255,255,255)
+GREEN=(100,200,100)
 
-    def update(self, platforms):
-        keys = pygame.key.get_pressed()
-        dx = 0
+# 定义人物尺寸
+PLAYER_W, PLAYER_H = 40, 60
+player = pygame.Rect(100, 100, PLAYER_W, PLAYER_H)
 
-        # 左右移动
-        if keys[pygame.K_LEFT]:
-            dx = -MOVE_SPEED
-        if keys[pygame.K_RIGHT]:
-            dx = MOVE_SPEED
+vel_y = 0
+gravity = 0.8
+on_ground = False
 
-        # 跳跃
-        if keys[pygame.K_SPACE] and self.on_ground:
-            self.vel_y = JUMP_STRENGTH
-            self.on_ground = False
+platforms = [
+    pygame.Rect(0, HEIGHT-50, WIDTH, 50),
+    pygame.Rect(200, 450, 150, 20),
+    pygame.Rect(450, 350, 200, 20)
+]
 
-        # 重力
-        self.vel_y += GRAVITY
-        if self.vel_y > 10:
-            self.vel_y = 10
+def draw_person(surface, rect):
+    """在rect区域内画一个简易小人"""
+    # 创建透明layer绘人
+    person = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    cx = rect.width // 2
 
-        # 移动
-        self.rect.x += dx
-        self.rect.y += self.vel_y
+    # 头
+    pygame.draw.circle(person, (245,205,160), (cx, 12), 10)
+    pygame.draw.circle(person, (0,0,0), (cx-3,11), 2)
+    pygame.draw.circle(person, (0,0,0), (cx+3,11), 2)
 
-        # 边界限制
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.right > WIDTH:
-            self.rect.right = WIDTH
+    # 身体
+    pygame.draw.line(person, (50,150,255), (cx, 22), (cx, 45), 6)
 
-        # 碰撞检测
-        self.on_ground = False
-        for platform in platforms:
-            if self.rect.colliderect(platform.rect):
-                if self.vel_y > 0 and self.rect.bottom <= platform.rect.bottom:
-                    self.rect.bottom = platform.rect.top
-                    self.vel_y = 0
-                    self.on_ground = True
+    # 手
+    pygame.draw.line(person, (50,150,255), (cx, 28), (cx-14, 38), 4)
+    pygame.draw.line(person, (50,150,255), (cx, 28), (cx+14, 38), 4)
 
-# --- 平台类 ---
-class Platform(pygame.sprite.Sprite):
-    def __init__(self, x, y, w, h):
-        super().__init__()
-        self.image = pygame.Surface((w, h))
-        self.image.fill(GREEN)
-        self.rect = self.image.get_rect(topleft=(x, y))
+    # 腿
+    pygame.draw.line(person, (0,0,0), (cx, 45), (cx-10, 60), 5)
+    pygame.draw.line(person, (0,0,0), (cx, 45), (cx+10, 60), 5)
 
-# --- 生成对象 ---
-player = Player()
-platforms = pygame.sprite.Group()
+    # 画到主surface
+    surface.blit(person, rect.topleft)
 
-# 地面平台
-ground = Platform(0, HEIGHT - 50, WIDTH, 50)
-platforms.add(ground)
-
-# 其他平台
-platforms.add(Platform(200, 450, 150, 20))
-platforms.add(Platform(450, 350, 200, 20))
-platforms.add(Platform(300, 250, 120, 20))
-
-# --- 游戏主循环 ---
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            pygame.quit(); sys.exit()
 
-    # 更新逻辑
-    player.update(platforms)
+    keys = pygame.key.get_pressed()
+    dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * 5
 
-    # 绘制
+    if keys[pygame.K_SPACE] and on_ground:
+        vel_y = -15
+        on_ground = False
+
+    vel_y += gravity
+    player.x += dx
+    player.y += vel_y
+
+    on_ground = False
+    for p in platforms:
+        if player.colliderect(p) and vel_y > 0:
+            player.bottom = p.top
+            vel_y = 0
+            on_ground = True
+
     screen.fill(WHITE)
-    platforms.draw(screen)
-    screen.blit(player.image, player.rect)
 
-    # 刷新画面
+    for p in platforms:
+        pygame.draw.rect(screen, GREEN, p)
+
+    draw_person(screen, player)   # <-- 用小人绘制替代rect
+
     pygame.display.flip()
-    clock.tick(FPS)
+    clock.tick(60)
+
