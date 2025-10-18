@@ -8,6 +8,7 @@ clock = pygame.time.Clock()
 WHITE=(255,255,255)
 GREEN=(100,200,100)
 bg = pygame.image.load("bg.png").convert()
+LEVEL_WIDTH = bg.get_width()  # 比如 3000
 
 # 定义人物尺寸
 PLAYER_W, PLAYER_H = 40, 60
@@ -16,6 +17,7 @@ player = pygame.Rect(100, 100, PLAYER_W, PLAYER_H)
 vel_y = 0
 gravity = 0.8
 on_ground = False
+player_speed = 5
 
 platforms = [
     pygame.Rect(0, HEIGHT-50, WIDTH, 50),
@@ -54,7 +56,7 @@ while True:
             pygame.quit(); sys.exit()
 
     keys = pygame.key.get_pressed()
-    dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * 5
+    dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * player_speed
 
     if keys[pygame.K_SPACE] and on_ground:
         vel_y = -15
@@ -71,13 +73,19 @@ while True:
             vel_y = 0
             on_ground = True
 
-    screen.blit(bg, (0,0))
+   # ==== 摄像机逻辑 ====
+    camera_x = player.x - WIDTH // 2
+    camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
 
+    # ==== 绘制背景 ====
+    screen.blit(bg, (-camera_x, 0))
 
+    # ==== 绘制平台 ====
     for p in platforms:
-        pygame.draw.rect(screen, GREEN, p)
+        pygame.draw.rect(screen, GREEN, (p.x - camera_x, p.y, p.width, p.height))
 
-    draw_person(screen, player)   # <-- 用小人绘制替代rect
+    # ==== 绘制玩家 ====
+    draw_person(screen, pygame.Rect(player.x - camera_x, player.y, PLAYER_W, PLAYER_H))
 
     pygame.display.flip()
     clock.tick(60)
