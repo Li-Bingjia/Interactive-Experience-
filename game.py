@@ -1,4 +1,5 @@
 import pygame, sys
+import math
 
 pygame.init()
 WIDTH, HEIGHT = 800, 600
@@ -14,12 +15,13 @@ LEVEL_WIDTH = bg.get_width()  # 背景宽度
 
 # ==== 玩家参数 ====
 PLAYER_W, PLAYER_H = 40, 60
+BASE_H = PLAYER_H  # 基础高度
 player = pygame.Rect(10, 100, PLAYER_W, PLAYER_H)
-vel_y = 0
-gravity = 0.8
+vel_y = 0.2
+gravity = 0.6
 on_ground = False
-player_speed = 5
-
+player_speed = 3
+frame = 0  # 全局帧计数，用于小人动画
 
 # 玩家初始/重置位置
 RESET_X, RESET_Y = 10, 100
@@ -33,7 +35,7 @@ platforms = [
     pygame.Rect(850, HEIGHT-200, 60, 20),
     pygame.Rect(800, HEIGHT-300, 30, 100),
     pygame.Rect(925, HEIGHT-420, 30, 250),
-    pygame.Rect(1050, HEIGHT-460, 60, 20),
+    pygame.Rect(1000, HEIGHT-460, 60, 20),
     
 ]
 
@@ -42,22 +44,29 @@ platforms = [
 slope_rect = pygame.Rect(150, HEIGHT-150, 200, 50)
 slope_height_offset = 80  # 右边比左边高50px
 
-def draw_person(surface, rect):
-    person = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-    cx = rect.width // 2
-    # 头
-    pygame.draw.circle(person, (245,205,160), (cx, 12), 10)
-    pygame.draw.circle(person, (0,0,0), (cx-3,11), 2)
-    pygame.draw.circle(person, (0,0,0), (cx+3,11), 2)
+def draw_person(surface, rect, frame=0):
+    px = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+    
+    # 胸部呼吸效果：用高度的相对变化
+    # rect.height 已经包含呼吸效果
+    amplitude = 1
+    offset = int(amplitude * math.sin(frame * 0.2))
+    
+    # 绘制头
+    pygame.draw.rect(px, (245,205,160), (rect.width//4, 0 + offset, rect.width//2, rect.height//4))
     # 身体
-    pygame.draw.line(person, (50,150,255), (cx, 22), (cx, 45), 6)
+    pygame.draw.rect(px, (50,150,255), (rect.width//4, rect.height//4 + offset, rect.width//2, rect.height*2//3))
     # 手
-    pygame.draw.line(person, (50,150,255), (cx, 28), (cx-14, 38), 4)
-    pygame.draw.line(person, (50,150,255), (cx, 28), (cx+14, 38), 4)
+    pygame.draw.rect(px, (50,150,255), (0, rect.height//4 + offset, rect.width//4, rect.height//4))
+    pygame.draw.rect(px, (50,150,255), (rect.width*3//4, rect.height//4 + offset, rect.width//4, rect.height//4))
     # 腿
-    pygame.draw.line(person, (0,0,0), (cx, 45), (cx-10, 60), 5)
-    pygame.draw.line(person, (0,0,0), (cx, 45), (cx+10, 60), 5)
-    surface.blit(person, rect.topleft)
+    pygame.draw.rect(px, (0,0,0), (rect.width//4, rect.height*3//4 + offset, rect.width//4, rect.height//4))
+    pygame.draw.rect(px, (0,0,0), (rect.width//2, rect.height*3//4 + offset, rect.width//4, rect.height//4))
+
+    surface.blit(px, rect.topleft)
+
+
+
 
 # ==== 游戏主循环 ====
 while True:
@@ -65,7 +74,10 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit(); sys.exit()
 
-    # ==== 玩家输入 ====
+    # ==== 摄像机计算 ====
+    camera_x = player.x - WIDTH//2
+    camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
+   
     keys = pygame.key.get_pressed()
     dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * player_speed
     if keys[pygame.K_SPACE] and on_ground:
@@ -111,13 +123,19 @@ while True:
             vel_y = 0
             on_ground = True
 
-    # ==== 摄像机计算 ====
-    camera_x = player.x - WIDTH//2
-    camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
+
 
     # ==== 绘制背景 ====
     screen.blit(bg, (-camera_x, 0))
+    
+    frame += 1
+    amplitude = 2      # 高度变化幅度（像素）
+    speed = 0.1        # 呼吸速度
 
+    player_h = BASE_H + int(amplitude * math.sin(frame * speed))
+    player_top = player.bottom - player_h
+    player_rect = pygame.Rect(player.x, player_top, PLAYER_W, player_h)
+    
     # ==== 绘制水平平台 ====
     for p in platforms:
         pygame.draw.rect(screen, GREEN, (p.x - camera_x, p.y, p.width, p.height))
@@ -130,8 +148,10 @@ while True:
     ]
     pygame.draw.polygon(screen, GREEN, points)
 
+    
     # ==== 绘制玩家 ====
-    draw_person(screen, pygame.Rect(player.x - camera_x, player.y, PLAYER_W, PLAYER_H))
+    draw_person(screen, pygame.Rect(player_rect.x - camera_x, player_rect.y, player_rect.width, player_rect.height), frame)
+
 
     pygame.display.flip()
     clock.tick(60)
