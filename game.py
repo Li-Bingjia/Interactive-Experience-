@@ -1,5 +1,4 @@
-import pygame, sys
-import math
+import pygame, sys, math
 
 pygame.init()
 WIDTH, HEIGHT = 800, 600
@@ -9,150 +8,150 @@ clock = pygame.time.Clock()
 WHITE = (255, 255, 255)
 GREEN = (153, 153, 142)
 
-# ==== 背景长图 ====
+# ==== 背景与平台 ====
 bg = pygame.image.load("bg.png").convert()
-LEVEL_WIDTH = bg.get_width()  # 背景宽度
+LEVEL_WIDTH = bg.get_width()
 platform_img = pygame.image.load("platform.png").convert_alpha()
 
-# ==== 玩家参数 ====
-PLAYER_W, PLAYER_H = 40, 60
-BASE_H = PLAYER_H  # 基础高度
-player = pygame.Rect(10, 100, PLAYER_W, PLAYER_H)
-vel_y = 0.2
-gravity = 0.6
-on_ground = False
-player_speed = 3
-frame = 0  # 全局帧计数，用于小人动画
-
-# 玩家初始/重置位置
-RESET_X, RESET_Y = 10, 100
-
-# ==== 平台列表 ====
-# 水平平台用 Rect
 platforms = [
     pygame.Rect(0, HEIGHT-125, 350, 50),
     pygame.Rect(480, HEIGHT-200, 150, 50),
     pygame.Rect(700, HEIGHT-200, 60, 20),
     pygame.Rect(850, HEIGHT-200, 60, 20),
-    pygame.Rect(800, HEIGHT-300, 30, 100),
-    pygame.Rect(925, HEIGHT-420, 30, 250),
-    pygame.Rect(1000, HEIGHT-460, 60, 20),
-    pygame.Rect(100, HEIGHT-290, 100, 35),
-    pygame.Rect(270, HEIGHT-335, 140, 35),
-    pygame.Rect(560, HEIGHT-445, 140, 35),
-    
 ]
 
-# 斜坡平台参数
-# 左低右高
 slope_rect = pygame.Rect(150, HEIGHT-150, 200, 50)
-slope_height_offset = 80  # 右边比左边高50px
+slope_height_offset = 80
 
-def draw_person(surface, rect, frame=0):
-    px = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-    
-    # 胸部呼吸效果：用高度的相对变化
-    # rect.height 已经包含呼吸效果
-    amplitude = 1
-    offset = int(amplitude * math.sin(frame * 0.2))
-    
-    # 绘制头
-    pygame.draw.rect(px, (245,205,160), (rect.width//4, 0 + offset, rect.width//2, rect.height//4))
-    # 身体
-    pygame.draw.rect(px, (50,150,255), (rect.width//4, rect.height//4 + offset, rect.width//2, rect.height*2//3))
-    # 手
-    pygame.draw.rect(px, (50,150,255), (0, rect.height//4 + offset, rect.width//4, rect.height//4))
-    pygame.draw.rect(px, (50,150,255), (rect.width*3//4, rect.height//4 + offset, rect.width//4, rect.height//4))
-    # 腿
-    pygame.draw.rect(px, (0,0,0), (rect.width//4, rect.height*3//4 + offset, rect.width//4, rect.height//4))
-    pygame.draw.rect(px, (0,0,0), (rect.width//2, rect.height*3//4 + offset, rect.width//4, rect.height//4))
+# ==== 玩家参数 ====
+PLAYER_W, PLAYER_H = 40, 60
+BASE_H = PLAYER_H
+player = pygame.Rect(10, 100, PLAYER_W, PLAYER_H)
+vel_y = 0.2
+gravity = 0.6
+on_ground = False
+player_speed = 3
+frame = 0
+RESET_X, RESET_Y = 10, 100
 
-    surface.blit(px, rect.topleft)
+# ==== 加载精灵 ====
+idle_sheet = pygame.image.load("idle.png").convert_alpha()  # 672x84 7帧
+run_sheet  = pygame.image.load("run.png").convert_alpha()   # 768x84 8帧
+jump_sheet = pygame.image.load("jump.png").convert_alpha()  # 480x84 5帧
 
+# 精灵帧数据
+IDLE_FRAMES = 7
+RUN_FRAMES = 8
+JUMP_FRAMES = 5
 
+IDLE_W, IDLE_H = 672//IDLE_FRAMES, 84
+RUN_W, RUN_H   = 768//RUN_FRAMES, 84
+JUMP_W, JUMP_H = 480//JUMP_FRAMES, 84
 
+ACTION_IDLE = 0
+ACTION_RUN  = 1
+ACTION_JUMP = 2
 
-# ==== 游戏主循环 ====
+def get_frame(sheet, frame_index, frame_w, frame_h):
+    rect = pygame.Rect(frame_index*frame_w, 0, frame_w, frame_h)
+    surf = pygame.Surface((frame_w, frame_h), pygame.SRCALPHA)
+    surf.blit(sheet, (0,0), rect)
+    return surf
+
+def draw_player(surface, x, y, moving, on_ground, facing_right, frame):
+    # 动作选择
+    if not on_ground:
+        current_action = ACTION_JUMP
+        sheet = jump_sheet
+        num_frames = JUMP_FRAMES
+        frame_w, frame_h = JUMP_W, JUMP_H
+    elif moving:
+        current_action = ACTION_RUN
+        sheet = run_sheet
+        num_frames = RUN_FRAMES
+        frame_w, frame_h = RUN_W, RUN_H
+    else:
+        current_action = ACTION_IDLE
+        sheet = idle_sheet
+        num_frames = IDLE_FRAMES
+        frame_w, frame_h = IDLE_W, IDLE_H
+
+    # 当前帧
+    frame_speed = 5
+    frame_index = (frame // frame_speed) % num_frames
+    img = get_frame(sheet, frame_index, frame_w, frame_h)
+
+    # 呼吸动画（仅idle）
+    breath_offset = int(math.sin(frame*0.1)*2) if current_action==ACTION_IDLE else 0
+    # 头部晃动（仅idle）
+    head_offset = int(math.sin(frame*0.2)*1) if current_action==ACTION_IDLE else 0
+
+    if current_action==ACTION_IDLE:
+        # 临时Surface修改头部
+        temp = pygame.Surface(img.get_size(), pygame.SRCALPHA)
+        temp.blit(img,(0,0))
+        head_rect = pygame.Rect(0,0,frame_w,12)
+        head_surf = temp.subsurface(head_rect).copy()
+        temp.blit(head_surf,(head_offset, breath_offset))
+        img = temp
+
+    # 翻转
+    if not facing_right:
+        img = pygame.transform.flip(img, True, False)
+
+    surface.blit(img, (x, y+breath_offset))
+
+# ==== 主循环 ====
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit(); sys.exit()
 
-    # ==== 摄像机计算 ====
+    # 摄像机
     camera_x = player.x - WIDTH//2
     camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
-   
+
     keys = pygame.key.get_pressed()
     dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * player_speed
     if keys[pygame.K_SPACE] and on_ground:
         vel_y = -15
         on_ground = False
-    if keys[pygame.K_1] or keys[pygame.K_KP1]:  # 按1重置
-        player.x = 100
-        player.y = 100
-        vel_y = 0
-
-    # ==== 更新玩家位置 ====
-    vel_y += gravity
-    player.x += dx
-    player.y += vel_y
-    # ==== 玩家掉落检测 ====
-    if player.y > HEIGHT or player.bottom < 0:  # 掉出屏幕底部或顶部
+    if keys[pygame.K_1] or keys[pygame.K_KP1]:
         player.x = RESET_X
         player.y = RESET_Y
         vel_y = 0
 
-    # ==== 碰撞检测：水平平台 ====
+    # 更新位置
+    vel_y += gravity
+    player.x += dx
+    player.y += vel_y
+
+    if player.y > HEIGHT or player.bottom < 0:
+        player.x = RESET_X
+        player.y = RESET_Y
+        vel_y = 0
+
+    # 碰撞检测
     on_ground = False
-    foot_rect = pygame.Rect(player.x, player.bottom-2, player.width, 4)  # 只用脚底检测
-
+    foot_rect = pygame.Rect(player.x, player.bottom-2, player.width, 4)
     for p in platforms:
-        if foot_rect.colliderect(p) and vel_y > 0:
-            player.bottom = p.top  # 依然纠正人物位置
+        if foot_rect.colliderect(p) and vel_y>0:
+            player.bottom = p.top
             vel_y = 0
             on_ground = True
 
-    # ==== 碰撞检测：斜坡 ====
-    px = player.centerx
-    x0, y0 = slope_rect.left, slope_rect.bottom      # 左低
-    x1, y1 = slope_rect.right, slope_rect.bottom - slope_height_offset  # 右高
-    if x0 <= px <= x1:
-        slope_y = y0 + (y1 - y0) * (px - x0) / (x1 - x0)
-        if player.bottom >= slope_y:
-            player.bottom = slope_y
-            vel_y = 0
-            on_ground = True
-
-
-
-    # ==== 绘制背景 ====
+    # 绘制背景
     screen.blit(bg, (-camera_x, 0))
-    
-    frame += 1
-    amplitude = 2      # 高度变化幅度（像素）
-    speed = 0.1        # 呼吸速度
-
-    player_h = BASE_H + int(amplitude * math.sin(frame * speed))
-    player_top = player.bottom - player_h
-    player_rect = pygame.Rect(player.x, player_top, PLAYER_W, player_h)
-    
-    # ==== 绘制水平平台 ====
+    # 绘制平台
     for p in platforms:
-            # 缩放图片到平台尺寸
-         img = pygame.transform.scale(platform_img, (p.width, p.height))
-         screen.blit(img, (p.x - camera_x, p.y))
-    # ==== 绘制斜坡平台 ====
-    points = [
-        (slope_rect.left - camera_x, slope_rect.bottom),
-        (slope_rect.right - camera_x, slope_rect.bottom - slope_height_offset),
-        (slope_rect.right - camera_x, slope_rect.bottom),
-    ]
-    pygame.draw.polygon(screen, GREEN, points)
+        img_scaled = pygame.transform.scale(platform_img, (p.width,p.height))
+        screen.blit(img_scaled, (p.x-camera_x, p.y))
 
-    
-    # ==== 绘制玩家 ====
-    draw_person(screen, pygame.Rect(player_rect.x - camera_x, player_rect.y, player_rect.width, player_rect.height), frame)
+    # 绘制玩家
+    moving = dx != 0
+    facing_right = dx>=0
+    draw_player(screen, player.x-camera_x, player.y, moving, on_ground, facing_right, frame)
 
-
+    frame += 1
     pygame.display.flip()
     clock.tick(60)
