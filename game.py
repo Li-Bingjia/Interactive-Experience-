@@ -7,11 +7,12 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
 WHITE = (255, 255, 255)
-GREEN = (100, 200, 100)
+GREEN = (153, 153, 142)
 
 # ==== 背景长图 ====
 bg = pygame.image.load("bg.png").convert()
 LEVEL_WIDTH = bg.get_width()  # 背景宽度
+platform_img = pygame.image.load("platform.png").convert_alpha()
 
 # ==== 玩家参数 ====
 PLAYER_W, PLAYER_H = 40, 60
@@ -36,6 +37,9 @@ platforms = [
     pygame.Rect(800, HEIGHT-300, 30, 100),
     pygame.Rect(925, HEIGHT-420, 30, 250),
     pygame.Rect(1000, HEIGHT-460, 60, 20),
+    pygame.Rect(100, HEIGHT-290, 100, 35),
+    pygame.Rect(270, HEIGHT-335, 140, 35),
+    pygame.Rect(560, HEIGHT-445, 140, 35),
     
 ]
 
@@ -92,12 +96,6 @@ while True:
     vel_y += gravity
     player.x += dx
     player.y += vel_y
-
-    # ==== 更新玩家位置 ====
-    vel_y += gravity
-    player.x += dx
-    player.y += vel_y
-
     # ==== 玩家掉落检测 ====
     if player.y > HEIGHT or player.bottom < 0:  # 掉出屏幕底部或顶部
         player.x = RESET_X
@@ -106,9 +104,11 @@ while True:
 
     # ==== 碰撞检测：水平平台 ====
     on_ground = False
+    foot_rect = pygame.Rect(player.x, player.bottom-2, player.width, 4)  # 只用脚底检测
+
     for p in platforms:
-        if player.colliderect(p) and vel_y > 0:
-            player.bottom = p.top
+        if foot_rect.colliderect(p) and vel_y > 0:
+            player.bottom = p.top  # 依然纠正人物位置
             vel_y = 0
             on_ground = True
 
@@ -138,8 +138,9 @@ while True:
     
     # ==== 绘制水平平台 ====
     for p in platforms:
-        pygame.draw.rect(screen, GREEN, (p.x - camera_x, p.y, p.width, p.height))
-
+            # 缩放图片到平台尺寸
+         img = pygame.transform.scale(platform_img, (p.width, p.height))
+         screen.blit(img, (p.x - camera_x, p.y))
     # ==== 绘制斜坡平台 ====
     points = [
         (slope_rect.left - camera_x, slope_rect.bottom),
