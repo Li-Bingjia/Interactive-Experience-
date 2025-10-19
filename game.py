@@ -14,8 +14,12 @@ LEVEL_WIDTH = bg.get_width()
 platform_img = pygame.image.load("platform.png").convert_alpha()
 
 platforms = [
-    pygame.Rect(0, HEIGHT-125, 350, 50),
-    pygame.Rect(480, HEIGHT-200, 150, 50),
+    pygame.Rect(0, HEIGHT-100, 200, 20),
+    pygame.Rect(90, HEIGHT-400, 75, 20),
+    pygame.Rect(280, HEIGHT-125, 200, 20),
+    pygame.Rect(320, HEIGHT-250, 40, 20),
+    pygame.Rect(250, HEIGHT-320, 40, 20),
+    pygame.Rect(480, HEIGHT-200, 150, 20),
     pygame.Rect(700, HEIGHT-200, 60, 20),
     pygame.Rect(850, HEIGHT-200, 60, 20),
 ]
@@ -28,7 +32,7 @@ PLAYER_W, PLAYER_H = 40, 60
 BASE_H = PLAYER_H
 player = pygame.Rect(10, 100, PLAYER_W, PLAYER_H)
 vel_y = 0.2
-gravity = 0.6
+gravity = 0.9
 on_ground = False
 player_speed = 3
 frame = 0
@@ -51,6 +55,16 @@ JUMP_W, JUMP_H = 480//JUMP_FRAMES, 84
 ACTION_IDLE = 0
 ACTION_RUN  = 1
 ACTION_JUMP = 2
+
+JUMP_INITIAL = -12        # 一跳起跳速度
+JUMP_HOLD_BOOST = -0.5    # 按住时每帧加的额外反重力
+MAX_HOLD_FRAMES = 12      # 最多连续助力帧数，防止飞上天
+
+hold_frames = 0
+holding_jump = False
+
+COYOTE_TIME = 0.12        # 离地后允许继续跳的时间（秒）
+coyote_timer = 0          # 剩余缓冲时间（秒）
 
 def get_frame(sheet, frame_index, frame_w, frame_h):
     rect = pygame.Rect(frame_index*frame_w, 0, frame_w, frame_h)
@@ -103,51 +117,71 @@ def draw_player(surface, x, y, moving, on_ground, facing_right, frame):
 
 # ==== 主循环 ====
 while True:
+    dt = clock.get_time()/1000  # 用于coyote timer
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit(); sys.exit()
 
-    # 摄像机
-    camera_x = player.x - WIDTH//2
-    camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
+        # 按下跳跃
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            if coyote_timer > 0:              # 允许在缓冲时间内跳
+                vel_y = JUMP_INITIAL
+                holding_jump = True
+                hold_frames = 0
+                coyote_timer = 0              # 用掉缓冲
 
+        # 松开跳跃
+        if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+            holding_jump = False
+            if vel_y < 0:
+                vel_y *= 0.4                 # 松开削减上升
+
+    # ======== 方向移动 ========
     keys = pygame.key.get_pressed()
     dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * player_speed
-    if keys[pygame.K_SPACE] and on_ground:
-        vel_y = -15
-        on_ground = False
+    # ==== 摄像机计算（必须在 blit 背景之前）====
+    camera_x = player.x - WIDTH // 2
+    camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
+    # ======== Coyote Time 计时 ========
+    if on_ground:
+        coyote_timer = COYOTE_TIME
+    else:
+        coyote_timer -= dt
+
+    # ======== 长按延长跳跃 ========
+    if holding_jump and keys[pygame.K_SPACE] and vel_y < 0 and hold_frames < MAX_HOLD_FRAMES:
+        vel_y += JUMP_HOLD_BOOST
+        hold_frames += 1
     if keys[pygame.K_1] or keys[pygame.K_KP1]:
         player.x = RESET_X
         player.y = RESET_Y
         vel_y = 0
-
-    # 更新位置
+    # ======== 位置更新 ========
     vel_y += gravity
     player.x += dx
     player.y += vel_y
 
+    # ======== 掉落重置 ========
     if player.y > HEIGHT or player.bottom < 0:
-        player.x = RESET_X
-        player.y = RESET_Y
+        player.x, player.y = RESET_X, RESET_Y
         vel_y = 0
 
-    # 碰撞检测
+    # ======== 碰撞检测 ========
     on_ground = False
     foot_rect = pygame.Rect(player.x, player.bottom-2, player.width, 4)
     for p in platforms:
-        if foot_rect.colliderect(p) and vel_y>0:
+        if foot_rect.colliderect(p) and vel_y > 0:
             player.bottom = p.top
             vel_y = 0
             on_ground = True
 
-    # 绘制背景
+    # ======== 画面渲染 ========
     screen.blit(bg, (-camera_x, 0))
-    # 绘制平台
     for p in platforms:
         img_scaled = pygame.transform.scale(platform_img, (p.width,p.height))
         screen.blit(img_scaled, (p.x-camera_x, p.y))
 
-    # 绘制玩家
     moving = dx != 0
     facing_right = dx>=0
     draw_player(screen, player.x-camera_x, player.y, moving, on_ground, facing_right, frame)
