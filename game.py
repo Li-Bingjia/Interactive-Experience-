@@ -3,6 +3,11 @@ import pygame, sys, math
 pygame.init()
 pygame.mixer.init()  # 初始化音频
 
+STATE_START = 0
+STATE_PLAYING = 1
+STATE_GAMEOVER = 2
+game_state = STATE_START
+
 # 背景音乐加载与播放
 pygame.mixer.music.load("bgm.mp3")
 pygame.mixer.music.set_volume(0.4)
@@ -27,7 +32,7 @@ platforms = [
     pygame.Rect(320, HEIGHT-250, 40, 20),
     pygame.Rect(250, HEIGHT-320, 40, 20),
     pygame.Rect(480, HEIGHT-200, 150, 20),
-    pygame.Rect(700, HEIGHT-200, 60, 20),
+    pygame.Rect(680, HEIGHT-200, 60, 20),
     pygame.Rect(850, HEIGHT-200, 60, 20),
 ]
 
@@ -78,7 +83,7 @@ def get_frame(sheet, frame_index, frame_w, frame_h):
     surf = pygame.Surface((frame_w, frame_h), pygame.SRCALPHA)
     surf.blit(sheet, (0,0), rect)
     return surf
-
+# 角色动作设计
 def draw_player(surface, x, y, moving, on_ground, facing_right, frame):
     # 动作选择
     if not on_ground:
@@ -124,74 +129,113 @@ def draw_player(surface, x, y, moving, on_ground, facing_right, frame):
 
 # ==== 主循环 ====
 while True:
-    dt = clock.get_time()/1000  # 用于coyote timer
+    dt = clock.get_time() / 1000  # 用于 Coyote Timer
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit(); sys.exit()
+            pygame.quit()
+            sys.exit()
 
-        # 按下跳跃
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            if coyote_timer > 0:              # 允许在缓冲时间内跳
-                vel_y = JUMP_INITIAL
-                holding_jump = True
-                hold_frames = 0
-                coyote_timer = 0              # 用掉缓冲
+        if game_state == STATE_START:
+            # 开始界面按空格进入游戏
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                game_state = STATE_PLAYING
 
-        # 松开跳跃
-        if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
-            holding_jump = False
-            if vel_y < 0:
-                vel_y *= 0.4                 # 松开削减上升
+        elif game_state == STATE_PLAYING:
+            # 按下跳跃
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if coyote_timer > 0:  # Coyote Time
+                    vel_y = JUMP_INITIAL
+                    holding_jump = True
+                    hold_frames = 0
+                    coyote_timer = 0  # 使用掉缓冲
 
-    # ======== 方向移动 ========
+            # 松开跳跃
+            if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+                holding_jump = False
+                if vel_y < 0:
+                    vel_y *= 0.4  # 松开削减上升
+
+            # 按 1 重置
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_1 or event.key == pygame.K_KP1):
+                player.x, player.y = RESET_X, RESET_Y
+                vel_y = 0
+
     keys = pygame.key.get_pressed()
-    dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * player_speed
-    # ==== 摄像机计算（必须在 blit 背景之前）====
-    camera_x = player.x - WIDTH // 2
-    camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
-    # ======== Coyote Time 计时 ========
-    if on_ground:
-        coyote_timer = COYOTE_TIME
-    else:
-        coyote_timer -= dt
 
-    # ======== 长按延长跳跃 ========
-    if holding_jump and keys[pygame.K_SPACE] and vel_y < 0 and hold_frames < MAX_HOLD_FRAMES:
-        vel_y += JUMP_HOLD_BOOST
-        hold_frames += 1
-    if keys[pygame.K_1] or keys[pygame.K_KP1]:
-        player.x = RESET_X
-        player.y = RESET_Y
-        vel_y = 0
-    # ======== 位置更新 ========
-    vel_y += gravity
-    player.x += dx
-    player.y += vel_y
+    if game_state == STATE_PLAYING:
+        # ======== 移动 ========
+        dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * player_speed
 
-    # ======== 掉落重置 ========
-    if player.y > HEIGHT or player.bottom < 0:
-        player.x, player.y = RESET_X, RESET_Y
-        vel_y = 0
+        # ======== 摄像机计算 ========
+        camera_x = player.x - WIDTH // 2
+        camera_x = max(0, min(camera_x, LEVEL_WIDTH - WIDTH))
 
-    # ======== 碰撞检测 ========
-    on_ground = False
-    foot_rect = pygame.Rect(player.x, player.bottom-2, player.width, 4)
-    for p in platforms:
-        if foot_rect.colliderect(p) and vel_y > 0:
-            player.bottom = p.top
+        # ======== Coyote Time 计时 ========
+        if on_ground:
+            coyote_timer = COYOTE_TIME
+        else:
+            coyote_timer -= dt
+
+        # ======== 长按跳跃 ========
+        if holding_jump and keys[pygame.K_SPACE] and vel_y < 0 and hold_frames < MAX_HOLD_FRAMES:
+            vel_y += JUMP_HOLD_BOOST
+            hold_frames += 1
+
+        # ======== 更新位置 ========
+        vel_y += gravity
+        player.x += dx
+        player.y += vel_y
+
+        # ======== 掉落重置 ========
+        if player.y > HEIGHT or player.bottom < 0:
+            player.x, player.y = RESET_X, RESET_Y
             vel_y = 0
-            on_ground = True
 
-    # ======== 画面渲染 ========
-    screen.blit(bg, (-camera_x, 0))
-    for p in platforms:
-        img_scaled = pygame.transform.scale(platform_img, (p.width,p.height))
-        screen.blit(img_scaled, (p.x-camera_x, p.y))
+        # ======== 碰撞检测 ========
+        on_ground = False
+        foot_rect = pygame.Rect(player.x, player.bottom-2, player.width, 4)
+        for p in platforms:
+            if foot_rect.colliderect(p) and vel_y > 0:
+                player.bottom = p.top
+                vel_y = 0
+                on_ground = True
 
-    moving = dx != 0
-    facing_right = dx>=0
-    draw_player(screen, player.x-camera_x, player.y, moving, on_ground, facing_right, frame)
+        # ======== 检查通关条件 ========
+        if player.x >= 1000:  # 可以改成固定平台或区域
+            game_state = STATE_GAMEOVER
+
+    # ======== 渲染画面 ========
+    screen.fill((0,0,0))
+
+    if game_state == STATE_START:
+        # 开始界面
+        font = pygame.font.SysFont(None, 48)
+        text = font.render("Press SPACE to Start", True, (255,255,255))
+        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+
+    elif game_state == STATE_PLAYING:
+        # 绘制背景
+        screen.blit(bg, (-camera_x, 0))
+        # 绘制平台
+        for p in platforms:
+            img_scaled = pygame.transform.scale(platform_img, (p.width, p.height))
+            screen.blit(img_scaled, (p.x - camera_x, p.y))
+        # 绘制玩家
+        moving = dx != 0
+        facing_right = dx >= 0
+        draw_player(screen, player.x - camera_x, player.y, moving, on_ground, facing_right, frame)
+
+    elif game_state == STATE_GAMEOVER:
+        font = pygame.font.SysFont(None, 48)
+        text = font.render("Game Over! Press SPACE to Restart", True, (255,255,255))
+        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+        # 按空格重新开始
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            player.x, player.y = RESET_X, RESET_Y
+            vel_y = 0
+            on_ground = False
+            game_state = STATE_PLAYING
 
     frame += 1
     pygame.display.flip()
