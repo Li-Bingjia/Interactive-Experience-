@@ -34,6 +34,8 @@ platforms = [
     pygame.Rect(480, HEIGHT-200, 150, 20),
     pygame.Rect(680, HEIGHT-200, 60, 20),
     pygame.Rect(850, HEIGHT-200, 60, 20),
+    pygame.Rect(950, HEIGHT-300, 60, 20),
+    pygame.Rect(1050, HEIGHT-300, 20, 20),
 ]
 
 slope_rect = pygame.Rect(150, HEIGHT-150, 200, 50)
@@ -149,7 +151,15 @@ while True:
                     holding_jump = True
                     hold_frames = 0
                     coyote_timer = 0  # 使用掉缓冲
-
+                 # GAMEOVER 重开逻辑
+        elif game_state == STATE_GAMEOVER:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+              player.x, player.y = RESET_X, RESET_Y
+              vel_y = 0
+              on_ground = False
+              frame = 0
+              game_state = STATE_PLAYING
+              
             # 松开跳跃
             if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
                 holding_jump = False
@@ -202,7 +212,7 @@ while True:
                 on_ground = True
 
         # ======== 检查通关条件 ========
-        if player.x >= 1000:  # 可以改成固定平台或区域
+        if player.x >= 1070:  # 可以改成固定平台或区域
             game_state = STATE_GAMEOVER
 
     # ======== 渲染画面 ========
@@ -225,19 +235,12 @@ while True:
         moving = dx != 0
         facing_right = dx >= 0
         draw_player(screen, player.x - camera_x, player.y, moving, on_ground, facing_right, frame)
-
     elif game_state == STATE_GAMEOVER:
-        font = pygame.font.SysFont(None, 48)
-        text = font.render("Game Over! Press SPACE to Restart", True, (255,255,255))
+        # 黑屏 + 提示文字
+        screen.fill((0,0,0))
+        text = font.render("Press SPACE to Restart", True, (255,255,255))
         screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
-        # 按空格重新开始
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            player.x, player.y = RESET_X, RESET_Y
-            vel_y = 0
-            on_ground = False
-            game_state = STATE_PLAYING
 
     frame += 1
     pygame.display.flip()
     clock.tick(60)
-
