@@ -35,11 +35,15 @@ platforms = [
     pygame.Rect(680, HEIGHT-200, 60, 20),
     pygame.Rect(850, HEIGHT-200, 60, 20),
     pygame.Rect(950, HEIGHT-300, 60, 20),
-    pygame.Rect(1050, HEIGHT-300, 20, 20),
+    pygame.Rect(1050, HEIGHT-300, 60, 20),
 ]
 
 slope_rect = pygame.Rect(150, HEIGHT-150, 200, 50)
 slope_height_offset = 80
+
+medals_image = pygame.image.load("medals.png").convert_alpha()  # 保留透明通道
+medals_image = pygame.transform.scale(medals_image, (50, 50)) 
+medals_pos = (1070, HEIGHT-360) 
 
 # ==== 玩家参数 ====
 PLAYER_W, PLAYER_H = 40, 60
@@ -212,34 +216,54 @@ while True:
                 on_ground = True
 
         # ======== 检查通关条件 ========
-        if player.x >= 1070:  # 可以改成固定平台或区域
+        if player.x >= 1050:  # 可以改成固定平台或区域
             game_state = STATE_GAMEOVER
 
     # ======== 渲染画面 ========
     screen.fill((0,0,0))
 
     if game_state == STATE_START:
-        # 开始界面
-        font = pygame.font.SysFont(None, 48)
-        text = font.render("Press SPACE to Start", True, (255,255,255))
-        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+      # 开始界面
+       font = pygame.font.SysFont(None, 48)
+       text = font.render("Press SPACE to Start", True, (255,255,255))
+       screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
 
     elif game_state == STATE_PLAYING:
-        # 绘制背景
+    # 绘制背景
         screen.blit(bg, (-camera_x, 0))
-        # 绘制平台
+    # 绘制平台
         for p in platforms:
-            img_scaled = pygame.transform.scale(platform_img, (p.width, p.height))
-            screen.blit(img_scaled, (p.x - camera_x, p.y))
-        # 绘制玩家
+           img_scaled = pygame.transform.scale(platform_img, (p.width, p.height))
+           screen.blit(img_scaled, (p.x - camera_x, p.y))
+    
+    # ===== 呼吸动画与奖牌绘制 =====
+    # 奖牌呼吸
+        medals_amplitude = 5
+        medals_speed = 0.05
+        scale_factor = 1 + (medals_amplitude * math.sin(frame * medals_speed)) / medals_image.get_height()
+        new_w = int(medals_image.get_width() * scale_factor)
+        new_h = int(medals_image.get_height() * scale_factor)
+        offset_x = (new_w - medals_image.get_width()) // 2
+        offset_y = (new_h - medals_image.get_height()) // 2
+        screen.blit(pygame.transform.smoothscale(medals_image, (new_w, new_h)),
+                   (medals_pos[0] - camera_x - offset_x, medals_pos[1] - offset_y))
+
+    # 玩家呼吸动画
+        player_amplitude = 2
+        player_speed_breath = 0.1
+        player_h = PLAYER_H + int(player_amplitude * math.sin(frame * player_speed_breath))
+        player_top = player.bottom - player_h
+        player_rect = pygame.Rect(player.x, player_top, PLAYER_W, player_h)
+
         moving = dx != 0
         facing_right = dx >= 0
-        draw_player(screen, player.x - camera_x, player.y, moving, on_ground, facing_right, frame)
+        draw_player(screen, player_rect.x - camera_x, player_rect.y, moving, on_ground, facing_right, frame)
+
     elif game_state == STATE_GAMEOVER:
-        # 黑屏 + 提示文字
-        screen.fill((0,0,0))
-        text = font.render("Press SPACE to Restart", True, (255,255,255))
-        screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
+    # 黑屏 + 提示文字
+      screen.fill((0,0,0))
+      text = font.render("Press SPACE to Restart", True, (255,255,255))
+      screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2))
 
     frame += 1
     pygame.display.flip()
