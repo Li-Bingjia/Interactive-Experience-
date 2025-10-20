@@ -1,6 +1,13 @@
 import pygame, sys, math
 
 pygame.init()
+pygame.mixer.init()  # 初始化音频
+
+# 背景音乐加载与播放
+pygame.mixer.music.load("bgm.mp3")
+pygame.mixer.music.set_volume(0.4)
+pygame.mixer.music.play(-1)  # 循环播放
+
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -189,3 +196,4 @@ while True:
     frame += 1
     pygame.display.flip()
     clock.tick(60)
+
