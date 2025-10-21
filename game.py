@@ -1,4 +1,17 @@
 import pygame, sys, math
+import pyaudio
+import numpy as np
+
+MIC_THRESHOLD = 50  # 灵敏度，可调
+CHUNK = 1024          # 每次采样帧数
+RATE = 44100          # 采样率
+
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paInt16,
+                channels=1,
+                rate=RATE,
+                input=True,
+                frames_per_buffer=CHUNK)
 
 pygame.init()
 pygame.mixer.init()  # 初始化音频
@@ -28,9 +41,9 @@ platform_img = pygame.image.load("platform.png").convert_alpha()
 platforms = [
     pygame.Rect(0, HEIGHT-100, 200, 20),
     pygame.Rect(90, HEIGHT-400, 75, 20),
-    pygame.Rect(280, HEIGHT-125, 200, 20),
     pygame.Rect(320, HEIGHT-250, 40, 20),
     pygame.Rect(250, HEIGHT-320, 40, 20),
+    pygame.Rect(280, HEIGHT-125, 200, 20),
     pygame.Rect(480, HEIGHT-200, 150, 20),
     pygame.Rect(680, HEIGHT-200, 60, 20),
     pygame.Rect(850, HEIGHT-200, 60, 20),
@@ -44,13 +57,16 @@ slope_height_offset = 80
 medals_image = pygame.image.load("medals.png").convert_alpha()  # 保留透明通道
 medals_image = pygame.transform.scale(medals_image, (50, 50)) 
 medals_pos = (1070, HEIGHT-360) 
+medals2_image = pygame.image.load("medals2.png").convert_alpha()  # 保留透明通道
+medals2_image = pygame.transform.scale(medals2_image, (50, 50)) 
+medals2_pos = (100, HEIGHT-460) 
 
 # ==== 玩家参数 ====
 PLAYER_W, PLAYER_H = 40, 60
 BASE_H = PLAYER_H
 player = pygame.Rect(10, 100, PLAYER_W, PLAYER_H)
 vel_y = 0.2
-gravity = 0.9
+gravity = 0.8
 on_ground = False
 player_speed = 3
 frame = 0
@@ -74,9 +90,10 @@ ACTION_IDLE = 0
 ACTION_RUN  = 1
 ACTION_JUMP = 2
 
-JUMP_INITIAL = -12        # 一跳起跳速度
-JUMP_HOLD_BOOST = -0.5    # 按住时每帧加的额外反重力
-MAX_HOLD_FRAMES = 12      # 最多连续助力帧数，防止飞上天
+JUMP_INITIAL = -40       # 单次跳跃初速度
+JUMP_HOLD_BOOST = -10   # 长按每帧叠加反重力（负数表示向上）
+MAX_HOLD_FRAMES = 20     # 长按持续帧数
+
 
 hold_frames = 0
 holding_jump = False
@@ -133,12 +150,23 @@ def draw_player(surface, x, y, moving, on_ground, facing_right, frame):
 
     surface.blit(img, (x, y+breath_offset))
 
+def is_sound_triggered():
+    data = stream.read(CHUNK, exception_on_overflow=False)
+    audio_data = np.frombuffer(data, dtype=np.int16)
+    volume = np.linalg.norm(audio_data) / CHUNK
+    return volume > MIC_THRESHOLD
+
 # ==== 主循环 ====
 while True:
     dt = clock.get_time() / 1000  # 用于 Coyote Timer
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            # 停止麦克风流
+            stream.stop_stream()
+            stream.close()
+            p.terminate()
+            
             pygame.quit()
             sys.exit()
 
@@ -167,8 +195,7 @@ while True:
             # 松开跳跃
             if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
                 holding_jump = False
-                if vel_y < 0:
-                    vel_y *= 0.4  # 松开削减上升
+          
 
             # 按 1 重置
             if event.type == pygame.KEYDOWN and (event.key == pygame.K_1 or event.key == pygame.K_KP1):
@@ -192,10 +219,24 @@ while True:
             coyote_timer -= dt
 
         # ======== 长按跳跃 ========
-        if holding_jump and keys[pygame.K_SPACE] and vel_y < 0 and hold_frames < MAX_HOLD_FRAMES:
+        #if holding_jump and keys[pygame.K_SPACE] and vel_y < 0 and hold_frames < MAX_HOLD_FRAMES:
+           # vel_y += JUMP_HOLD_BOOST
+           # hold_frames += 1
+        # ===== 麦克风声音触发跳跃 =====
+        if is_sound_triggered():
+            if coyote_timer > 0:  # 允许Coyote Time
+                vel_y = JUMP_INITIAL 
+                hold_frames = 0
+                holding_jump = True
+                coyote_timer = 0  # 用掉缓冲
+        else:
+            holding_jump = False
+
+        if holding_jump and vel_y < 0 and hold_frames < MAX_HOLD_FRAMES:
             vel_y += JUMP_HOLD_BOOST
             hold_frames += 1
-
+        if vel_y < 0:
+            vel_y *= 0.4  # 松开削减上升
         # ======== 更新位置 ========
         vel_y += gravity
         player.x += dx
@@ -232,9 +273,16 @@ while True:
     # 绘制背景
         screen.blit(bg, (-camera_x, 0))
     # 绘制平台
-        for p in platforms:
-           img_scaled = pygame.transform.scale(platform_img, (p.width, p.height))
-           screen.blit(img_scaled, (p.x - camera_x, p.y))
+        for i, p in enumerate(platforms):
+            img_scaled = pygame.transform.scale(platform_img, (p.width, p.height))
+
+            if i in (1, 3, 2):  # 透明的平台索引
+                img_scaled.set_alpha(82)  # 值越小越透明 (0~255)
+            else:
+                img_scaled.set_alpha(255)  # 不透明
+
+            screen.blit(img_scaled, (p.x - camera_x, p.y))
+
     
     # ===== 呼吸动画与奖牌绘制 =====
     # 奖牌呼吸
@@ -247,7 +295,15 @@ while True:
         offset_y = (new_h - medals_image.get_height()) // 2
         screen.blit(pygame.transform.smoothscale(medals_image, (new_w, new_h)),
                    (medals_pos[0] - camera_x - offset_x, medals_pos[1] - offset_y))
-
+        medals2_amplitude = 5
+        medals2_speed = 0.05
+        scale2_factor = 1 + (medals2_amplitude * math.sin(frame * medals2_speed)) / medals2_image.get_height()
+        new2_w = int(medals2_image.get_width() * scale2_factor)
+        new2_h = int(medals2_image.get_height() * scale2_factor)
+        offset2_x = (new2_w - medals2_image.get_width()) // 2
+        offset2_y = (new2_h - medals2_image.get_height()) // 2
+        screen.blit(pygame.transform.smoothscale(medals2_image, (new2_w, new2_h)),
+                   (medals2_pos[0] - camera_x - offset2_x, medals2_pos[1] - offset2_y))
     # 玩家呼吸动画
         player_amplitude = 2
         player_speed_breath = 0.1
@@ -268,3 +324,4 @@ while True:
     frame += 1
     pygame.display.flip()
     clock.tick(60)
+    
