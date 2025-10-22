@@ -89,7 +89,21 @@ If game does not detect your sound, reduce MIC_THRESHOLD
 
 Use mic_test.py before playing to find a proper threshold
 
-bg is from https://anokolisa.itch.io/moon-graveyard and https://edermunizz.itch.io/free-pixel-art-forest
-character is from https://xzany.itch.io/free-knight-2d-pixel-art
-music is from https://www.fesliyanstudios.com/royalty-free-music/download/retro-forest/451
-icon is from https://free-game-assets.itch.io/48-free-minerals-pixel-art-icons-pack
+###📎 Assets Credits
+
+The following third-party assets are used in this project:
+
+Type	Usage	Source	License / Notes
+Background	In-game environment backgrounds	https://anokolisa.itch.io/moon-graveyard
+
+https://edermunizz.itch.io/free-pixel-art-forest
+	Free for personal / non-commercial use
+Character	Player sprite sheets (Idle / Run / Jump)	https://xzany.itch.io/free-knight-2d-pixel-art
+	Free to use with attribution
+Music (BGM)	Background track retro-forest	https://www.fesliyanstudios.com/royalty-free-music/download/retro-forest/451
+	Royalty-free for non-commercial
+Icons	Medal and pixel icons	https://free-game-assets.itch.io/48-free-minerals-pixel-art-icons-pack
+	Free assets
+
+This project is for educational and demonstration purposes only.
+All rights to the assets belong to their original authors.
