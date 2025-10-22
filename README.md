@@ -66,10 +66,20 @@ ESC / Window close	Quit (and safely close mic stream)
 
 🔊 Voice Jump Logic
 The game continuously listens to microphone input using PyAudio
+![1](https://github.com/user-attachments/assets/5a1ec80c-6b94-453d-9567-4b05c7c15539)
 
 When volume exceeds defined threshold (MIC_THRESHOLD), it triggers a jump
 
 Jump height is calibrated to mimic a full "tap space" jump, not a mini jump
+
+![2](https://github.com/user-attachments/assets/8ebe9be2-c7e3-4c8a-a15c-20dead17e9c4)
+
+The goal of the game :
+Player must keep moving right and jump across platforms.
+When the player reaches the red gem at the far right side, the game ends.
+
+![3](https://github.com/user-attachments/assets/7fc3485c-198a-4644-b172-5eaf0f383577)
+
 
 You can change sensitivity here (in game.py):
 
