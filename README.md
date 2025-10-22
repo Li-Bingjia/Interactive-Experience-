@@ -50,7 +50,9 @@ Example output:
 
 makefile
 Copy code
-Volume: ████████████████  (120)
+Volume: ████████████████  (100)
+<img width="1047" height="402" alt="image" src="https://github.com/user-attachments/assets/f96f7a33-8438-4438-abc9-017c5d524c5a" />
+The best volume to jump in the game is around 80-100
 ### 3. Run The Game
 bash
 Copy code
