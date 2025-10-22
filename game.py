@@ -1,3 +1,27 @@
+"""
+=== Controls & Gameplay Instruction ===
+
+Controls:
+ - Move Left:  ←  (Left Arrow Key)
+ - Move Right: →  (Right Arrow Key)
+ - Jump:       SPACE or shout/make sound via microphone
+   （Microphone jump is triggered when input volume > MIC_THRESHOLD）
+
+How to adjust microphone sensitivity:
+ - Increase MIC_THRESHOLD = less sensitive (need louder sound)
+ - Lower MIC_THRESHOLD   = more sensitive  (small sound can trigger jump)
+   Recommended range: 20 ~ 200 depending on device
+
+Game Goal:
+ - The level scrolls horizontally to the right.
+ - Player must keep moving right and jump across platforms.
+ - When the player reaches the red gem at the far right side, the game ends.
+
+Note:
+ - If jump triggered by mic is too weak, adjust jump strength parameters:
+     JUMP_INITIAL / JUMP_HOLD_BOOST / MAX_HOLD_FRAMES
+"""
+
 import pygame, sys, math
 import pyaudio
 import numpy as np
@@ -325,3 +349,4 @@ while True:
     pygame.display.flip()
     clock.tick(60)
     
+
