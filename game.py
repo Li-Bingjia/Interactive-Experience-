@@ -4,7 +4,7 @@
 Controls:
  - Move Left:  ←  (Left Arrow Key)
  - Move Right: →  (Right Arrow Key)
- - Jump:       SPACE or shout/make sound via microphone
+ - Jump:       Shout/make sound via microphone
    （Microphone jump is triggered when input volume > MIC_THRESHOLD）
 
 How to adjust microphone sensitivity:
@@ -349,4 +349,5 @@ while True:
     pygame.display.flip()
     clock.tick(60)
     
+
 
