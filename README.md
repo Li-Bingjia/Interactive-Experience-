@@ -5,7 +5,8 @@ A simple platformer game built with **Pygame** where the player can **jump by vo
 
 This repository also includes a microphone testing tool to visualize sound volume in real-time before running the game.
 
-![Uploading image.png…]()
+<img width="1397" height="1046" alt="image" src="https://github.com/user-attachments/assets/f016233f-5f7d-4461-88c7-8d5491b5402c" />
+
 
 
 ## 📁 Project Structure
