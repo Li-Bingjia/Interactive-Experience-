@@ -30,14 +30,14 @@ Copy code
 
 ### 1. Install Dependencies
 
-```bash
+
 pip install pygame pyaudio numpy
 ⚠️ Windows 用户若 pyaudio 安装失败，可用：
 
 pip install pipwin
 pipwin install pyaudio
 
-2. Test Microphone First
+### 2. Test Microphone First
 bash
 Copy code
 python mic_test.py
@@ -51,7 +51,7 @@ Example output:
 makefile
 Copy code
 Volume: ████████████████  (120)
-3. Run The Game
+### 3. Run The Game
 bash
 Copy code
 python game.py
@@ -79,10 +79,8 @@ Add your own images or GIFs here:
 
 markdown
 Copy code
-![Game Screenshot](images/screenshot.png)
 
-![Voice Jump Demo GIF](images/demo.gif)
-✅ Notes
+### ✅ Notes
 Microphone is properly closed (stream.stop_stream, stream.close, p.terminate) when quitting
 
 If game does not detect your sound, reduce MIC_THRESHOLD
