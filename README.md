@@ -82,21 +82,23 @@ Add your own images or GIFs here:
 markdown
 Copy code
 
-### ✅ Notes
+## ✅ Notes
 Microphone is properly closed (stream.stop_stream, stream.close, p.terminate) when quitting
 
 If game does not detect your sound, reduce MIC_THRESHOLD
 
 Use mic_test.py before playing to find a proper threshold
 
-###📎 Assets Credits
-
+## 📎 Assets Credits
 The following third-party assets are used in this project:
 
 Type	Usage	Source	License / Notes
 Background	In-game environment backgrounds	https://anokolisa.itch.io/moon-graveyard and https://edermunizz.itch.io/free-pixel-art-forest
+
 Character	Player sprite sheets (Idle / Run / Jump)	https://xzany.itch.io/free-knight-2d-pixel-art
+
 Music (BGM)	Background track retro-forest	https://www.fesliyanstudios.com/royalty-free-music/download/retro-forest/451
+
 Icons	Medal and pixel icons	https://free-game-assets.itch.io/48-free-minerals-pixel-art-icons-pack
 
 This project is for educational and demonstration purposes only.
