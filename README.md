@@ -32,7 +32,7 @@ Copy code
 
 
 pip install pygame pyaudio numpy
-⚠️ Windows 用户若 pyaudio 安装失败，可用：
+⚠️ Windows if pyaudio install failed：
 
 pip install pipwin
 pipwin install pyaudio
@@ -57,6 +57,7 @@ The best volume to jump in the game is around 80-100
 bash
 Copy code
 python game.py
+
 🎮 Interaction & Controls
 Control Method	Action
 Speak / make sound near mic	Trigger jump (same height as spacebar jump)
@@ -72,6 +73,8 @@ When volume exceeds defined threshold (MIC_THRESHOLD), it triggers a jump
 
 Jump height is calibrated to mimic a full "tap space" jump, not a mini jump
 
+📸 Screenshots / Demo 
+
 ![2](https://github.com/user-attachments/assets/8ebe9be2-c7e3-4c8a-a15c-20dead17e9c4)
 
 The goal of the game :
@@ -86,8 +89,7 @@ You can change sensitivity here (in game.py):
 python
 Copy code
 MIC_THRESHOLD = 150  # Lower = more sensitive, Higher = harder to trigger
-📸 Screenshots / Demo (optional)
-Add your own images or GIFs here:
+
 
 markdown
 Copy code
