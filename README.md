@@ -63,7 +63,9 @@ Control Method	Action
 Speak / make sound near mic	Trigger jump (same height as spacebar jump)
 ← → Arrow keys	Move left / right
 SPACE (start menu)	Start game / Restart after game over
+P (Only lowercase key)  Pause game / Resume game
 ESC / Window close	Quit (and safely close mic stream)
+<img width="1391" height="1043" alt="image" src="https://github.com/user-attachments/assets/4728044a-38e7-4989-b095-eb537adb8377" />
 
 🔊 Voice Jump Logic
 The game continuously listens to microphone input using PyAudio
