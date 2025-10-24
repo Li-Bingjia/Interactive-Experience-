@@ -2,7 +2,6 @@
 === Controls & Gameplay Instruction ===
 
 Controls:
- - Pause the game:  p  (Only Lowercase Key)
  - Move Left:  ←  (Left Arrow Key)
  - Move Right: →  (Right Arrow Key)
  - Jump:       Shout/make sound via microphone
@@ -63,6 +62,9 @@ clock = pygame.time.Clock()
 # ====== 游戏元素 ======
 WHITE = (255, 255, 255)
 GREEN = (153, 153, 142)
+
+goal_sound = pygame.mixer.Sound("goal.wav")
+goal_sound.set_volume(0.6)   # 可调
 
 bg = pygame.image.load("bg.png").convert()
 LEVEL_WIDTH = bg.get_width()
@@ -257,8 +259,13 @@ while True:
                 player.bottom = p.top
                 vel_y = 0
                 on_ground = True
+        gem_rect = pygame.Rect(100, HEIGHT-460, 50, 50)  # 假设宝石位置
 
-        if player.x >= 1050:
+        if player.colliderect(gem_rect) and game_state == STATE_PLAYING:
+           goal_sound.play()
+
+        if player.x >= 1050 and game_state == STATE_PLAYING:
+            goal_sound.play() 
             game_state = STATE_GAMEOVER
 
     # ====== 渲染 ======
