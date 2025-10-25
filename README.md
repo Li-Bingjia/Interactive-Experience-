@@ -114,6 +114,7 @@ Character	Player sprite sheets (Idle / Run / Jump)	https://xzany.itch.io/free-kn
 Music (BGM)	Background track retro-forest	https://www.fesliyanstudios.com/royalty-free-music/download/retro-forest/451
 
 Icons	Medal and pixel icons	https://free-game-assets.itch.io/48-free-minerals-pixel-art-icons-pack
+
 Sound effect https://mixkit.co/free-sound-effects/game/?utm_source=chatgpt.com
 
 This project is for educational and demonstration purposes only.
